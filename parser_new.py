@@ -2,9 +2,18 @@ import ply.yacc as yacc
 from scanner import tokens
 
 
+def p_jump_instruction(t):
+    '''jump_instruction : RETURN expression SEMI_COL'''
+    t[0] = ('RETURN', t[2])
+    
+
+### condition
+
 def p_condition(t):
     '''condition : expression comparison_operator expression'''
-    t[0] = t[2], t[1], t[3]
+    t[0] = (t[2], t[1], t[3])
+    
+### comparison_operator
     
 def p_comparison_operator(t):
     '''comparison_operator : EGAL
@@ -25,11 +34,11 @@ def p_expression_1(t):
 
 def p_expression_2(t):
     '''expression : expression SHIFTLEFT expression_additive'''
-    t[0] = 'SHIFTLEFT', t[1], t[3]
+    t[0] = ('SHIFTLEFT', t[1], t[3])
 
 def p_expression_3(t):
     '''expression : expression SHIFTRIGHT expression_additive'''
-    t[0] = 'SHIFTRIGHT', t[1], t[3]
+    t[0] = ('SHIFTRIGHT', t[1], t[3])
 
 ### expression_additive
 
