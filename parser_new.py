@@ -1,6 +1,23 @@
 import ply.yacc as yacc
 from scanner import tokens
 
+
+def p_condition(t):
+    '''condition : expression comparison_operator expression'''
+    t[0] = t[2], t[1], t[3]
+    
+def p_comparison_operator(t):
+    '''comparison_operator : EGAL
+                        | DIFF
+                        | INF 
+                        | SUP 
+                        | INFEQUAL
+                        | SUPEQUAL '''
+    print "comp"
+    t[0] = t[1]
+
+### expression
+
 def p_expression_1(t):
     '''expression : expression_additive'''
     print "expression"
