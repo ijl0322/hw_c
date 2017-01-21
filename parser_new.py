@@ -1,7 +1,18 @@
 import ply.yacc as yacc
 from scanner import tokens
 
+def p_expression_1(t):
+    '''expression : expression_additive'''
+    print "expression"
+    t[0] = t[1]
 
+def p_expression_2(t):
+    '''expression : expression SHIFTLEFT expression_additive'''
+    t[0] = 'SHIFTLEFT', t[1], t[3]
+
+def p_expression_3(t):
+    '''expression : expression SHIFTRIGHT expression_additive'''
+    t[0] = 'SHIFTRIGHT', t[1], t[3]
 
 ### expression_additive
 
@@ -95,9 +106,9 @@ def p_primary_expression_4(t):
     t[0] = ('PRIME_EXPRESS',t[2])
     
 ### test_case remove later
-def p_expression(t):
-    '''expression : primary_expression'''
-    t[0] = t[1]
+#def p_expression(t):
+#    '''expression : primary_expression'''
+#    t[0] = t[1]
     
 def p_error(t):
     if t:
