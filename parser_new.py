@@ -1,7 +1,7 @@
 import ply.yacc as yacc
 from scanner import tokens
 
-precedence = ( ('nonassoc', 'IF_STATE'), ('nonassoc', 'IF_ELSE')) 
+precedence = ( ('nonassoc', 'IF_STATE'), ('nonassoc', 'ELSE')) 
 
 def p_program_1(t):
     'program : external_declaration'
@@ -22,6 +22,7 @@ def p_external_declaration_1(t):
 def p_external_declaration_2(t):
     'external_declaration : EXTERN declaration'
     t[0] = ('EXTERN', t[2])
+    print "Declaring extern function", (t[0][1][1][0][1][0]) 
 
 def p_external_declaration_3(t):
     '''external_declaration : function-definition'''
@@ -32,13 +33,15 @@ def p_external_declaration_3(t):
 def p_function(t):
     '''function-definition : type function_declarator compound_instruction''' 
     t[0] = 'DEF_FUNC', t[1], t[2], t[3]
-    print "Declaring function %s which returns type %s and take parameters" %(t[2][1], t[1][1]), t[2][2] 
+    print "Declaring function %s" %(t[2][0])
     
 ### declaration
 
 def p_declaration(t): # multiple variable declaration on the same line ??? 
     '''declaration : type declarator_list SEMI_COL'''
     t[0] = (t[1], t[2])
+    if t[0][1][0][0] == 'IDENT' and type(t[0][1][0][1]) == str:
+        print "Declaring variable %s of type %s" %(t[0][1][0][1], str(t[1][1]))
 
 ### type
 
@@ -72,17 +75,17 @@ def p_declaration_list_2(t):
 def p_declarator(t):
     '''declarator : IDENT
                     | function_declarator'''
-    t[0] = t[1]
+    t[0] = ('IDENT',t[1])
 
 ### function_declare
 
 def p_function_declarator_1(t):
-    '''function_declarator : IDENT L_PARENTHESIS parameter_list R_PARENTHESIS'''
-    t[0] = ('IDENT', t[1], t[3])
+    '''function_declarator : IDENT L_PARENTHESIS R_PARENTHESIS'''
+    t[0] = (t[1], None)
 
 def p_function_declarator_2(t):
-    '''function_declarator : IDENT L_PARENTHESIS R_PARENTHESIS'''
-    t[0] = ('IDENT', t[1], None)
+    '''function_declarator : IDENT L_PARENTHESIS parameter_list R_PARENTHESIS'''
+    t[0] = (t[1], t[3])
 
 ### parameter_list
 
@@ -99,8 +102,6 @@ def p_parameter_list_2(t):
 def p_parameter_declaration(t):
     '''parameter_declaration : type IDENT'''
     t[0] = t[1], t[2]
-    
-### ---------- code under is probably working ? ---- 
 
 ### instruction
 def p_instruction_1(t):
@@ -109,10 +110,10 @@ def p_instruction_1(t):
 
 def p_instruction_2(t):
     '''
-    instruction : expression_instruction
-              | compound_instruction
-              | select_instruction
+    instruction : compound_instruction
+              | expression_instruction
               | iteration_instruction
+              | select_instruction
               | jump_instruction
               '''
     t[0] = ('STATE', t[1])
@@ -131,6 +132,7 @@ def p_expression_instruction_2(t):
 def p_assignment(t):
     '''assignment : IDENT ASSIGNMENT expression'''
     t[0] = ('ASSIGN', t[1], t[3])
+    print "Assigning ", t[1]
 
 ### compound_instruction
 
@@ -173,12 +175,14 @@ def p_instruction_list_2(t):
 ### select_instruction
 
 def p_select_instruction_1(t):
-    '''select_instruction : cond_instruction instruction %prec IF_STATE'''
-    t[0] = (t[1], t[3]) 
+    '''select_instruction : cond_instruction instruction %prec IF_STATE''' #
+    t[0] = (t[1], t[2]) 
+    print "Define if statement with condition", t[1][1][1][1], t[1][1][0], t[1][1][2][1]
     
 def p_select_instruction_2(t):
-    '''select_instruction : cond_instruction instruction ELSE instruction %prec IF_ELSE'''
+    '''select_instruction : cond_instruction instruction ELSE instruction''' #
     t[0] = ('ELSE', t[1], t[2], t[4])
+    print "Define If Else statement with condition", t[1][1][1][1], t[1][1][0], t[1][1][2][1]
 
 
 ### condition_instruction
@@ -192,17 +196,17 @@ def p_cond_instruction(t):
 def p_iteration_instruction_1(t):
     '''iteration_instruction : WHILE L_PARENTHESIS condition R_PARENTHESIS instruction'''
     t[0] = ('WHILE', t[3], t[5])
-    print "While loop"
+    print "Define While loop with condition", t[3][1][1], t[3][0], t[3][2][1]
 
 def p_iteration_instruction_2(t):
     '''iteration_instruction : DO instruction WHILE L_PARENTHESIS condition R_PARENTHESIS'''
     t[0] = ('DO_WHILE', t[2], t[5])
-    print "Do while"
+    print "Define Do While loop with condition", t[5][1][1], t[5][0], t[5][2][1]
     
 def p_iteration_instruction_3(t):
-    '''iteration_instruction : FOR L_PARENTHESIS expression SEMI_COL condition SEMI_COL expression R_PARENTHESIS instruction '''
+    '''iteration_instruction : FOR L_PARENTHESIS assignment SEMI_COL condition SEMI_COL assignment R_PARENTHESIS instruction '''
     t[0] = ('FOR', t[3], t[5], t[7], t[9])
-    print "For loop"
+    print "Define For loop with iterator", t[3][1]
     
 ### jump_instruction
 
@@ -225,14 +229,14 @@ def p_comparison_operator(t):
                         | SUP 
                         | INFEQUAL
                         | SUPEQUAL '''
-    print "comp"
+    #print "comp"
     t[0] = t[1]
 
 ### expression
 
 def p_expression_1(t):
     '''expression : expression_additive'''
-    print "expression"
+    #print "expression"
     t[0] = t[1]
 
 def p_expression_2(t):
@@ -247,41 +251,46 @@ def p_expression_3(t):
 
 def p_expression_additive_1(t):
     '''expression_additive : expression_multiplicative'''
-    print "add"
+    #print "add"
     t[0] = t[1]
 
 def p_expression_additive_2(t):
     '''expression_additive : expression_additive PLUS expression_multiplicative'''
     t[0] = ('PLUS', t[1], t[3])
+    print "Addition of %s and %s" %(t[1][1], t[3][1])
 
 def p_additive_expression_3(t):
     'expression_additive : expression_additive MINUS expression_multiplicative'
     t[0] = ('MINUS', t[1], t[3])
+    print "Subtraction of %s and %s" %(t[1][1], t[3][1])
 
 ### expression_multiplicative
 
 def p_expression_multiplicative_1(t):
     'expression_multiplicative : unary_expression'
-    print "mult"
+    #print "mult"
     t[0] = t[1]
 
 def p_expression_multiplicative_2(t):
     'expression_multiplicative : expression_multiplicative MULTI unary_expression'
     t[0] = 'MUL', t[1], t[3]
+    print "Multiplication of %s and %s" %(t[1][1], t[3][1])
 
 def p_expression_multiplicative_3(t):
     'expression_multiplicative : expression_multiplicative DIV unary_expression'
     t[0] = 'DIV', t[1], t[3]
+    print "Division of %s and %s" %(t[1][1], t[3][1])
 
 def p_multiplicative_expression_4(t):
     'expression_multiplicative : expression_multiplicative MODULO unary_expression'
     t[0] = 'MODULO', t[1], t[3]
+    print "Modulo operation of %s and %s" %(t[1][1], t[3][1])
 
 ### unary_expression
 
 def p_unary_expression_1(t): #numeric values? 
     '''unary_expression : postfix_expression'''
-    print "unary"
+    #print "unary"
     t[0] = t[1]
 
 def p_unary_expression_2(t): #negative numeric values? 
@@ -292,7 +301,7 @@ def p_unary_expression_2(t): #negative numeric values?
 
 def p_postfix_expression_1(t):
     '''postfix_expression : primary_expression'''
-    print "postfix"
+    #print "postfix"
     t[0] = t[1]
 
 def p_postfix_expression_2(t):
@@ -341,13 +350,22 @@ def p_primary_expression_4(t):
     
 def p_error(t):
     if t:
-         print("Syntax error at token", t[0])
+         print "Syntax error at token", t
          parser.errok()
     else:
          print("Syntax error at EOF")
 
 
 if __name__ == '__main__':
-    S = raw_input("Input expression: ")
-    parser = yacc.yacc(method='LALR')
+    #S = raw_input("Input expression: ")
+    #S = "int main() {int i; i = 3 - 5; i = 3 + 5; i = 3 * 5; i = 3 / 5; i = 3 % 5;}" #Arithmetic operations ok
+    #S = "int main() {int i; if(i>0){printf(i);}}"  #If statement ok
+    #S = "int main() {int i; for(i=0;i<10;i=i+1){}}"  #For loop ok
+    #S = "int main() {int i; i = 0; while(i<0){}}" #WHIle loop ok
+    #S = "int main() {int i; do{i=1;} while(i<0);}" #Do While loop ok
+    #S = "extern int foo2(int x);" #Extern function ok
+    #S = "int main() {int i; if (i < 0) {i = i + 1;}}" #If statement ok
+    S = "int main() {int i; if (i < 0) {i = i + 1;} else {}}"
+    
+    parser = yacc.yacc(method='LALR') 
     print(parser.parse(S))
